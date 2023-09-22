@@ -1,0 +1,14 @@
+//Push local files to github
+
+//locate first ur repository folder on github
+git remote set-url origin https://github.com/GeykZone/city-health.git
+git remote add origin https://github.com/GeykZone/city-health.git
+
+
+git add .
+git commit -m "New commit"
+git push origin main
+
+
+//remove romote origin
+ git remote remove origin
