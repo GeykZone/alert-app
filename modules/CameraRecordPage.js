@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Camera } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import { FontAwesome } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 
 const CameraRecordPage = () => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -12,10 +13,12 @@ const CameraRecordPage = () => {
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      const audioStatus = await MediaLibrary.requestPermissionsAsync();
-      setHasCameraPermission(status === 'granted' && audioStatus.status === 'granted');
+      const media_lib = await MediaLibrary.requestPermissionsAsync();
+      const audio_set =  await Audio.requestPermissionsAsync();
+      setHasCameraPermission(status === 'granted' && media_lib.status === 'granted' && audio_set.status === 'granted');
     })();
   }, []);
+  
 
   const takePicture = async () => {
     if (cameraRef) {
@@ -54,7 +57,6 @@ const CameraRecordPage = () => {
     }
   };
   
-
   const toggleRecording = () => {
     if (isRecording) {
       stopRecording();
