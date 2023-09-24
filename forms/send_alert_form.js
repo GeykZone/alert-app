@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef  } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,16 +12,22 @@ import {
 import logoImage from "../assets/irms_login_logo.png";
 import NetInfo from "@react-native-community/netinfo";
 import * as Location from 'expo-location';
+import CameraRecordPage from '../modules/CameraRecordPage';
 
-const alertForm = ({ navigation }) => {
+const AlertForm = ({ navigation }) => {
   const [userDetails, setUserDetails] = useState({
     username: "",
   });
 
+  const handleOpenCamera = () => {
+    // Navigate to the CameraRecordPage
+    navigation.navigate('CameraRecordPage'); // Replace 'CameraRecordPage' with the actual screen name
+  };
+
   const [location, setLocation] = useState(null);
   const [areaName, setAreaName] = useState(null);
   const [user_name, setUser_name] = useState("Unknown");
-  
+
 
   useEffect(() => {
     // Request location permission when the component mounts
@@ -32,7 +38,6 @@ const alertForm = ({ navigation }) => {
       }
     })();
   }, []);
-
 
   
   const handleUsernameChange = (text) => {
@@ -112,6 +117,7 @@ const alertForm = ({ navigation }) => {
 
   return (
     <View style={styles.loginPageContainer}>
+      
      <Image source={logoImage} style={styles.logo} />
       <Text style={styles.subtitle}>User {user_name}</Text>
 
@@ -125,11 +131,17 @@ const alertForm = ({ navigation }) => {
           
         />
       </View>
-      
 
-     <TouchableOpacity onPress={handleAlert} style={styles.button}>
-        <Text style={styles.buttonText}>Accident Alert</Text>
-     </TouchableOpacity>
+      <View>
+      <TouchableOpacity onPress={handleOpenCamera} style={styles.button}>
+        <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER WITH EVIDENCE</Text>
+      </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleAlert} style={styles.button}>
+          <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
+          </TouchableOpacity>
+      </View>
+
 
     </View>
   );
@@ -138,8 +150,8 @@ const alertForm = ({ navigation }) => {
 const styles = StyleSheet.create({
 
     logo: {
-        width: 250, // Adjust the width and height to fit your logo size
-        height: 100,
+        width: 600, // Adjust the width and height to fit your logo size
+        height: 200,
         resizeMode: "contain", // Use "contain" to maintain the aspect ratio
         alignSelf: "center", // Center the logo horizontally
         marginTop: -10, // Adjust the marginTop to control the vertical position
@@ -147,7 +159,7 @@ const styles = StyleSheet.create({
 
   loginPageContainer: {
     flex: 1,
-    backgroundColor: "#EAF2F8",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     rowGap: 30,
@@ -158,7 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#8764cd"
+    color: "#0F52BA"
   },
 
   inputContainer: {
@@ -175,7 +187,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: "#0F52BA",
+    backgroundColor: "#FF6100",
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -187,6 +199,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
   },
+
+  
+
 });
 
-export default alertForm;
+export default AlertForm;

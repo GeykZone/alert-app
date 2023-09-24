@@ -1,12 +1,12 @@
 import React from "react";
 import { View } from "react-native";
-import LoginForms from "./forms/send_alert_form"; // Import the Registration component
+import AppNavigator from './navigator'; // Replace with the correct path to your navigation setup
 
 const App = ({ navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       {/* Other components or screens */}
-      <LoginForms />
+      <AppNavigator  />
       {/* Other components or screens */}
     </View>
   );

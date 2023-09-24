@@ -1,0 +1,22 @@
+irms_db
+    -location
+        -location_id
+        -location_name
+        -long
+        -lat
+    -accident_incident
+        -accident_incident_id
+        -location_id
+        -accident_incident_name
+        -no_of_casualties
+        -date_time_recorded
+    -profile
+        -profile_id
+        -profile_name
+        -headquarter_location
+    -user
+        -user_id
+        -profile_id
+        -username
+        -password
+        -file
