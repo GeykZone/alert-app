@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Camera } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
-import { FontAwesome } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
 
 const CameraRecordPage = () => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -13,17 +13,15 @@ const CameraRecordPage = () => {
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      const media_lib = await MediaLibrary.requestPermissionsAsync();
-      const audio_set =  await Audio.requestPermissionsAsync();
-      setHasCameraPermission(status === 'granted' && media_lib.status === 'granted' && audio_set.status === 'granted');
+      const audioSet = await Audio.requestPermissionsAsync();
+      setHasCameraPermission(status === 'granted' && audioSet.status === 'granted');
     })();
   }, []);
-  
 
   const takePicture = async () => {
     if (cameraRef) {
       const photo = await cameraRef.takePictureAsync();
-      saveMediaToLibrary(photo.uri);
+      saveMediaToFileSystem(photo.uri, false);
     }
   };
 
@@ -33,8 +31,9 @@ const CameraRecordPage = () => {
         setIsRecording(true); // Set recording state before starting recording
         const videoRecordPromise = cameraRef.recordAsync();
         if (videoRecordPromise) {
+          // Not saving the video to the media library, but you can save it to the file system.
           const { uri } = await videoRecordPromise;
-          saveMediaToLibrary(uri);
+          saveMediaToFileSystem(uri, true);
         }
       } catch (error) {
         console.error('Error starting recording:', error);
@@ -49,14 +48,19 @@ const CameraRecordPage = () => {
         const videoRecordPromise = cameraRef.stopRecording();
         if (videoRecordPromise) {
           const { uri } = await videoRecordPromise;
-      
         }
       } catch (error) {
         console.error('Error stopping recording:', error);
       }
     }
   };
+
+  const generateFileName = (isVideo) => {
+    const extension = isVideo ? 'mp4' : 'jpg';
+    return `media_${Date.now()}.${extension}`;
+  };
   
+
   const toggleRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -65,17 +69,41 @@ const CameraRecordPage = () => {
     }
   };
 
-  const saveMediaToLibrary = async (uri) => {
+  const saveMediaToMediaLibrary = async (uri) => {
     if (uri) {
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      console.log('Evidence saved at:', asset.uri); // Log the URI of the saved video
-      // You can handle further actions with the saved asset here
+      try {
+        const asset = await MediaLibrary.createAssetAsync(uri);
+        console.log('Saved to Expo Media Library:', asset.uri);
+      } catch (error) {
+        console.error('Error saving to Expo Media Library:', error);
+      }
+    }
+  };
+
+  const saveMediaToFileSystem = async (uri, isVideo) => {
+    if (uri) {
+      try {
+        const fileName = generateFileName(isVideo);
+        const destinationUri = `${FileSystem.documentDirectory}${fileName}`;
+  
+        await FileSystem.moveAsync({
+          from: uri,
+          to: destinationUri,
+        });
+  
+        console.log('Saved to internal storage:', destinationUri);
+  
+        // After saving to internal storage, save it to the Expo Media Library
+        saveMediaToMediaLibrary(destinationUri, isVideo);
+      } catch (error) {
+        console.error('Error saving media to internal storage:', error);
+      }
     }
   };
 
   return (
     <View style={styles.container}>
-    {hasCameraPermission === null ? (
+      {hasCameraPermission === null ? (
         <Text>Requesting camera permission...</Text>
       ) : hasCameraPermission === false ? (
         <Text>No access to camera</Text>
@@ -90,17 +118,13 @@ const CameraRecordPage = () => {
       )}
       <View style={styles.buttonsContainer}>
         <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-          <FontAwesome name="camera" size={32} color="white" />
+          <Text style={[styles.buttonText, { textAlign: 'center' }]}>Capture</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.recordButton}
           onPress={toggleRecording}
         >
-          <FontAwesome
-            name={isRecording ? 'stop' : 'circle'}
-            size={32}
-            color="white"
-          />
+          <Text style={[styles.buttonText, { textAlign: 'center' }]}>{isRecording ? 'stop' : 'Record'}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -135,6 +159,11 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 20,
     margin: 20,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 15,
+    fontWeight: "bold",
   },
 });
 
