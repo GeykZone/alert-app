@@ -47,7 +47,6 @@ const CameraRecordPage = () => {
   
 
   const takePicture = async () => {
-    await requestPermissions();
 
     if (cameraRef) {
       const photo = await cameraRef.takePictureAsync();
@@ -56,7 +55,6 @@ const CameraRecordPage = () => {
   };
 
   const startRecording = async () => {
-    await requestPermissions();
   
     if (cameraRef) {
       try {
