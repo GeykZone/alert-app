@@ -1,24 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, PermissionsAndroid } from 'react-native';
 import { Camera } from 'expo-camera';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
+
 
 const CameraRecordPage = () => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [cameraRef, setCameraRef] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
 
+  const requestPermissions = async () => {
+    try {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      ]);
+  
+      if (
+        granted['android.permission.CAMERA'] === 'granted' &&
+        granted['android.permission.RECORD_AUDIO'] === 'granted' &&
+        granted['android.permission.WRITE_EXTERNAL_STORAGE'] === 'granted'
+      ) {
+        // Permissions granted, you can proceed with camera and recording operations
+      } else {
+        // Handle denied permissions, e.g., show an error message or take appropriate action
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+  
+
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       const audioSet = await Audio.requestPermissionsAsync();
       setHasCameraPermission(status === 'granted' && audioSet.status === 'granted');
+  
+      // Request Android permissions
+      await requestPermissions();
     })();
   }, []);
+  
 
   const takePicture = async () => {
+    await requestPermissions();
+
     if (cameraRef) {
       const photo = await cameraRef.takePictureAsync();
       saveMediaToFileSystem(photo.uri, false);
@@ -26,6 +56,8 @@ const CameraRecordPage = () => {
   };
 
   const startRecording = async () => {
+    await requestPermissions();
+  
     if (cameraRef) {
       try {
         setIsRecording(true); // Set recording state before starting recording
@@ -39,7 +71,7 @@ const CameraRecordPage = () => {
         console.error('Error starting recording:', error);
       }
     }
-  };
+  }
 
   const stopRecording = async () => {
     if (cameraRef) {
