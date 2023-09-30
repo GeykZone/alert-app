@@ -14,7 +14,7 @@ const AppNavigator = () => {
         <Stack.Screen name="CameraRecordPage" title="Camera"  component={CameraRecordPage} options={{ title: 'Create Evidence' }} />
         {/* Add other screens as needed */}
       </Stack.Navigator>
-    </NavigationContainer>
+    </NavigationContainer>//navigate
   );
 };
 
