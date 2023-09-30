@@ -6,7 +6,7 @@ git remote add origin https://github.com/GeykZone/city-health.git
 
 
 git add .
-git commit -m "New commit"
+git commit -m "Commit on $(date)"
 git push origin main
 
 
