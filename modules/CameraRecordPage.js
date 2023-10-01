@@ -4,7 +4,8 @@ import { Camera } from 'expo-camera';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
-
+import * as Device from 'expo-device';
+import uuid from 'react-native-uuid';
 
 const CameraRecordPage = () => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -87,7 +88,7 @@ const CameraRecordPage = () => {
 
   const generateFileName = (isVideo) => {
     const extension = isVideo ? 'mp4' : 'jpg';
-    return `media_${Date.now()}.${extension}`;
+    return `${Device.brand}_${uuid.v4()}_${Date.now()}.${extension}`;
   };
   
 
