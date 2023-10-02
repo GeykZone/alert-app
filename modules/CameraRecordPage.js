@@ -6,8 +6,10 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
 import * as Device from 'expo-device';
 import uuid from 'react-native-uuid';
-import { doc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore"; 
-import { db } from "../firebaseConfig";
+import { doc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from "../firebaseConfig";
+
 
 const CameraRecordPage = ({ route }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -126,47 +128,59 @@ const CameraRecordPage = ({ route }) => {
         });
   
         console.log('Saved to internal storage:', destinationUri);
-  
+
         // After saving to internal storage, save it to the Expo Media Library
         saveMediaToMediaLibrary(destinationUri, isVideo);
-
-        // Reference to the document where you want to add the subcollection
+  
+        // Convert the saved file to a Blob or File object
+        const blobOrFile = await convertToBlobOrFile(destinationUri);
+  
+        // Initialize Firebase Storage
+        const storage = getStorage();
+        const storageRef = ref(storage, `media/${fileName}`);
+  
+        // Upload the media using uploadBytes
+        const snapshot = await uploadBytes(storageRef, blobOrFile);
+  
+        // Get the download URL for the uploaded file
+        const downloadURL = await getDownloadURL(storageRef);
+  
+        console.log('Uploaded to Firebase Storage:', downloadURL);
+  
+        // After uploading to Firebase Storage, save the download URL to Firestore
         const documentRef = doc(db, 'profile', 'user');
-
-         // Reference to the subcollection "reports" inside the main document
-         const subcollectionRef = collection(documentRef, "data");
-
-         // Data to be added to the subcollection
+        const subcollectionRef = collection(documentRef, 'data');
         const reportData = {
           user_name: loc_data.witness_name,
           alert_location: loc_data.areaName,
           lat: loc_data.lat,
           long: loc_data.long,
-          date_added: serverTimestamp()
+          date_added: serverTimestamp(),
+          media_url: downloadURL, // Add the download URL to Firestore
         };
-
-        try{
-
+  
+        try {
           // Add data to the subcollection and get the auto-generated document ID
           const newDocumentRef = await addDoc(subcollectionRef, reportData);
-
+  
           // Use the newDocumentRef.id here
           const newDocumentId = newDocumentRef.id; // INSERT HERE
-
+  
           // Nested operation to set data in 'temp_logs' collection
           await setDoc(doc(db, 'temp_logs', newDocumentId), {
             user_name: loc_data.witness_name,
             alert_location: loc_data.areaName,
             lat: loc_data.lat,
             long: loc_data.long,
-            date_added: serverTimestamp()
+            date_added: serverTimestamp(),
+            media_url: downloadURL, // Add the download URL to Firestore
           });
-
+  
           // Display the location information in an alert
           const message = `Area Name: ${loc_data.areaName}\nLatitude: ${loc_data.lat}\nLongitude: ${loc_data.long}\n
-          \nMessage is sent to the nearest Police and Rescuers!\n
-          \nMessage alerted by: ${loc_data.witness_name}\nAttatched File: ${fileName}`;
-
+            \nMessage is sent to the nearest Police and Rescuers!\n
+            \nMessage alerted by: ${loc_data.witness_name}\nAttached File: ${fileName}`;
+  
           Alert.alert('Accident Location', message, [
             {
               text: 'OK',
@@ -175,17 +189,28 @@ const CameraRecordPage = ({ route }) => {
               },
             },
           ]);
-
-        }
-        catch (error) {
+        } catch (error) {
           console.error('Error adding report or setting temp logs:', error);
         }
-
       } catch (error) {
         console.error('Error saving media to internal storage:', error);
       }
     }
   };
+
+
+    // Helper function to convert the saved file to a Blob or File object
+    const convertToBlobOrFile = async (uri) => {
+      try {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        return blob;
+      } catch (error) {
+        console.error('Error converting to Blob:', error);
+        return null;
+      }
+    };
+  
 
   return (
     <View style={styles.container}>
