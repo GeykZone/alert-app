@@ -7,12 +7,12 @@
     },
     "preview2": {
       "android": {
-        "gradleCommand": ":app:assembleDebug"
+        "gradleCommand": ":app:assembleRelease"
       }
     },
     "preview3": {
       "developmentClient": true
     },
     "production": {}
-}}
-
+  }
+}
