@@ -6,6 +6,8 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
 import * as Device from 'expo-device';
 import uuid from 'react-native-uuid';
+import { doc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore"; 
+import { db } from "../firebaseConfig";
 
 const CameraRecordPage = ({ route }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -128,21 +130,57 @@ const CameraRecordPage = ({ route }) => {
         // After saving to internal storage, save it to the Expo Media Library
         saveMediaToMediaLibrary(destinationUri, isVideo);
 
-        // Display the location information in an alert
-        const message = `Area Name: ${loc_data.areaName}\nLatitude: ${loc_data.lat}\nLongitude: ${loc_data.long}\n
-        \nMessage is sent to the nearest Police and Rescuers!\n
-        \nMessage alerted by: ${loc_data.witness_name}\nAttatched File: ${fileName}`;
+        // Reference to the document where you want to add the subcollection
+        const documentRef = doc(db, 'profile', 'user');
 
-        Alert.alert('Accident Location', message, [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Handle success, navigate to the next screen, etc.
+         // Reference to the subcollection "reports" inside the main document
+         const subcollectionRef = collection(documentRef, "data");
+
+         // Data to be added to the subcollection
+        const reportData = {
+          user_name: loc_data.witness_name,
+          alert_location: loc_data.areaName,
+          lat: loc_data.lat,
+          long: loc_data.long,
+          date_added: serverTimestamp()
+        };
+
+        try{
+
+          // Add data to the subcollection and get the auto-generated document ID
+          const newDocumentRef = await addDoc(subcollectionRef, reportData);
+
+          // Use the newDocumentRef.id here
+          const newDocumentId = newDocumentRef.id; // INSERT HERE
+
+          // Nested operation to set data in 'temp_logs' collection
+          await setDoc(doc(db, 'temp_logs', newDocumentId), {
+            user_name: loc_data.witness_name,
+            alert_location: loc_data.areaName,
+            lat: loc_data.lat,
+            long: loc_data.long,
+            date_added: serverTimestamp()
+          });
+
+          // Display the location information in an alert
+          const message = `Area Name: ${loc_data.areaName}\nLatitude: ${loc_data.lat}\nLongitude: ${loc_data.long}\n
+          \nMessage is sent to the nearest Police and Rescuers!\n
+          \nMessage alerted by: ${loc_data.witness_name}\nAttatched File: ${fileName}`;
+
+          Alert.alert('Accident Location', message, [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Handle success, navigate to the next screen, etc.
+              },
             },
-          },
-        ]);
+          ]);
 
-        
+        }
+        catch (error) {
+          console.error('Error adding report or setting temp logs:', error);
+        }
+
       } catch (error) {
         console.error('Error saving media to internal storage:', error);
       }

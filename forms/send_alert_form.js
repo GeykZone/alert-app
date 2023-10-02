@@ -13,6 +13,9 @@ import logoImage from "../assets/irms_login_logo.png";
 import NetInfo from "@react-native-community/netinfo";
 import * as Location from 'expo-location';
 import CameraRecordPage from '../modules/CameraRecordPage';
+import { doc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore"; 
+import { db } from "../firebaseConfig";
+
 
 const AlertForm = ({ navigation }) => {
   const [userDetails, setUserDetails] = useState({
@@ -92,24 +95,56 @@ const AlertForm = ({ navigation }) => {
           areaName: areaName,
           lat: location.coords.latitude,
           long: location.coords.longitude,
-          witness_name: witness_name
+          witness_name: witness_name,
         };
         navigation.navigate('CameraRecordPage', {loc_data}); //open camera page
       }
-      else
-      {
-        // Display the location information in an alert
-        const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n
-        \nMessage is sent to the nearest Police and Rescuers!\n\nMessage alerted by: ${witness_name}`;
-    
-        Alert.alert('Accident Location', message, [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Handle success, navigate to the next screen, etc.
+      else {
+        // Reference to the document where you want to add the subcollection
+        const documentRef = doc(db, 'profile', 'user');
+  
+        // Reference to the subcollection "reports" inside the main document
+        const subcollectionRef = collection(documentRef, "data");
+  
+        // Data to be added to the subcollection
+        const reportData = {
+          user_name: witness_name,
+          alert_location: areaName,
+          lat: location.coords.latitude,
+          long: location.coords.longitude,
+          date_added: serverTimestamp()
+        };
+  
+        try {
+          // Add data to the subcollection and get the auto-generated document ID
+          const newDocumentRef = await addDoc(subcollectionRef, reportData);
+  
+          // Use the newDocumentRef.id here
+          const newDocumentId = newDocumentRef.id; // INSERT HERE
+  
+          // Nested operation to set data in 'temp_logs' collection
+          await setDoc(doc(db, 'temp_logs', newDocumentId), {
+            user_name: witness_name,
+            alert_location: areaName,
+            lat: location.coords.latitude,
+            long: location.coords.longitude,
+            date_added: serverTimestamp()
+          });
+  
+          // Display the location information in an alert
+          const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n\nMessage is sent to the nearest Police and Rescuers!\n\nMessage alerted by: ${witness_name}`;
+  
+          Alert.alert('Accident Location', message, [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Handle success, navigate to the next screen, etc.
+              },
             },
-          },
-        ]);
+          ]);
+        } catch (error) {
+          console.error('Error adding report or setting temp logs:', error);
+        }
       }
   
     
