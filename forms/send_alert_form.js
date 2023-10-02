@@ -19,11 +19,6 @@ const AlertForm = ({ navigation }) => {
     username: "",
   });
 
-  const handleOpenCamera = () => {
-    // Navigate to the CameraRecordPage
-    navigation.navigate('CameraRecordPage'); // Replace 'CameraRecordPage' with the actual screen name
-  };
-
   const [location, setLocation] = useState(null);
   const [areaName, setAreaName] = useState(null);
   const [user_name, setUser_name] = useState("Unknown");
@@ -60,7 +55,7 @@ const AlertForm = ({ navigation }) => {
     }
   };
 
-  const handleAlert = async () => {
+  const handleAlert = async (hasEvidence) => {
     try {
       // Check for internet connectivity
       const networkState = await NetInfo.fetch();
@@ -90,19 +85,34 @@ const AlertForm = ({ navigation }) => {
       {
         witness_name = user_name;
       }
-  
-      // Display the location information in an alert
-      const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n
-      \nMessage is sent to the nearest Police and Rescuers!\n\nMessage alerted by: ${witness_name}`;
-  
-      Alert.alert('Accident Location', message, [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Handle success, navigate to the next screen, etc.
+
+      if(hasEvidence)
+      {
+        const loc_data = {
+          areaName: areaName,
+          lat: location.coords.latitude,
+          long: location.coords.longitude,
+          witness_name: witness_name
+        };
+        navigation.navigate('CameraRecordPage', {loc_data}); //open camera page
+      }
+      else
+      {
+        // Display the location information in an alert
+        const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n
+        \nMessage is sent to the nearest Police and Rescuers!\n\nMessage alerted by: ${witness_name}`;
+    
+        Alert.alert('Accident Location', message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Handle success, navigate to the next screen, etc.
+            },
           },
-        },
-      ]);
+        ]);
+      }
+  
+    
     } catch (error) {
       Alert.alert('Something Went Wrong', error.message, [
         {
@@ -133,11 +143,11 @@ const AlertForm = ({ navigation }) => {
       </View>
 
       <View>
-      <TouchableOpacity onPress={handleOpenCamera} style={styles.button}>
+      <TouchableOpacity onPress={() => handleAlert(true)} style={styles.button}>
         <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER WITH EVIDENCE</Text>
       </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleAlert} style={styles.button}>
+          <TouchableOpacity onPress={() => handleAlert(false)} style={styles.button}>
           <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
           </TouchableOpacity>
       </View>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, PermissionsAndroid } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, PermissionsAndroid } from 'react-native';
 import { Camera } from 'expo-camera';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
@@ -7,10 +7,11 @@ import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
 import * as Device from 'expo-device';
 import uuid from 'react-native-uuid';
 
-const CameraRecordPage = () => {
+const CameraRecordPage = ({ route }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [cameraRef, setCameraRef] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
+  const { loc_data } = route.params;
 
   const requestPermissions = async () => {
     try {
@@ -126,6 +127,22 @@ const CameraRecordPage = () => {
   
         // After saving to internal storage, save it to the Expo Media Library
         saveMediaToMediaLibrary(destinationUri, isVideo);
+
+        // Display the location information in an alert
+        const message = `Area Name: ${loc_data.areaName}\nLatitude: ${loc_data.lat}\nLongitude: ${loc_data.long}\n
+        \nMessage is sent to the nearest Police and Rescuers!\n
+        \nMessage alerted by: ${loc_data.witness_name}\nAttatched File: ${fileName}`;
+
+        Alert.alert('Accident Location', message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Handle success, navigate to the next screen, etc.
+            },
+          },
+        ]);
+
+        
       } catch (error) {
         console.error('Error saving media to internal storage:', error);
       }
