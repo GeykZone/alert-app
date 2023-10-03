@@ -13,7 +13,7 @@ import logoImage from "../assets/irms_login_logo.png";
 import NetInfo from "@react-native-community/netinfo";
 import * as Location from 'expo-location';
 import CameraRecordPage from '../modules/CameraRecordPage';
-import { doc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore"; 
+import { doc, setDoc, collection, addDoc, serverTimestamp, query, getDocs } from "firebase/firestore"; 
 import { db } from "../firebaseConfig";
 
 
@@ -25,7 +25,6 @@ const AlertForm = ({ navigation }) => {
   const [location, setLocation] = useState(null);
   const [areaName, setAreaName] = useState(null);
   const [user_name, setUser_name] = useState("Unknown");
-
 
   useEffect(() => {
     // Request location permission when the component mounts
@@ -89,6 +88,8 @@ const AlertForm = ({ navigation }) => {
         witness_name = user_name;
       }
 
+      const result = await get_data( location.coords.latitude, location.coords.longitude,);
+
       if(hasEvidence)
       {
         const loc_data = {
@@ -96,6 +97,11 @@ const AlertForm = ({ navigation }) => {
           lat: location.coords.latitude,
           long: location.coords.longitude,
           witness_name: witness_name,
+          headquarter_id: result.nearestDocId,
+          headquarter_lat: result.nearestCoordinate.lat,
+          headquarter_long: result.nearestCoordinate.long,
+          headquarter_name: result.nearestheadquarter_name,
+          headquarter_location_name: result.nearestheadquarter_location_name
         };
         navigation.navigate('CameraRecordPage', {loc_data}); //open camera page
       }
@@ -112,7 +118,12 @@ const AlertForm = ({ navigation }) => {
           alert_location: areaName,
           lat: location.coords.latitude,
           long: location.coords.longitude,
-          date_added: serverTimestamp()
+          date_added: serverTimestamp(),
+          headquarter_id: result.nearestDocId,
+          headquarter_lat: result.nearestCoordinate.lat,
+          headquarter_long: result.nearestCoordinate.long,
+          headquarter_name: result.nearestheadquarter_name,
+          headquarter_location_name: result.nearestheadquarter_location_name
         };
   
         try {
@@ -128,11 +139,18 @@ const AlertForm = ({ navigation }) => {
             alert_location: areaName,
             lat: location.coords.latitude,
             long: location.coords.longitude,
-            date_added: serverTimestamp()
+            date_added: serverTimestamp(),
+            headquarter_id: result.nearestDocId,
+            headquarter_lat: result.nearestCoordinate.lat,
+            headquarter_long: result.nearestCoordinate.long,
+            headquarter_name: result.nearestheadquarter_name,
+            headquarter_location_name: result.nearestheadquarter_location_name
+            
           });
   
           // Display the location information in an alert
-          const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n\nMessage is sent to the nearest Police and Rescuers!\n\nMessage alerted by: ${witness_name}`;
+          const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n\nMessage is sent to the nearest Police and Rescuers!
+          \nPolice Headquarter: ${result.nearestheadquarter_name}\n\nMessage alerted by: ${witness_name}`;
   
           Alert.alert('Accident Location', message, [
             {
@@ -160,6 +178,81 @@ const AlertForm = ({ navigation }) => {
     }
   };
 
+  const get_data = async (get_data_lat, get_data_lon) => 
+  {
+    // Reference to the subcollection "head_quarters" inside the "profile/police" collection
+    const subcollectionRef = collection(db, "profile", "police", "head_quarters");
+    let constantLat = get_data_lat;
+    let constantLon = get_data_lon;
+
+    // Query all documents in the "head_quarters" subcollection
+    const q = query(subcollectionRef);
+
+    try {
+      const querySnapshot = await getDocs(q);
+
+      // Initialize variables to store the nearest coordinate and its distance
+      let nearestCoordinate = null;
+      let nearestDocId = null;
+      let nearestheadquarter_name = null;
+      let nearestheadquarter_location_name = null;
+      let minDistance = Number.MAX_VALUE;
+    
+
+      // Process the query results
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const lat = data.lat;
+        const long = data.long;
+        const headquarter_name = data.headquarter_name;
+        const headquarter_location_name = data.headquarter_location_name;
+
+        // Calculate the distance between the constant and Firestore coordinates
+        const distance = calculateDistance(
+          constantLat,
+          constantLon,
+          lat,
+          long
+        );
+
+        // Check if this coordinate is nearer than the current nearest coordinate
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestCoordinate = { lat, long };
+          nearestDocId = doc.id;
+          nearestheadquarter_name = headquarter_name;
+          nearestheadquarter_location_name = headquarter_location_name;
+        }
+      });
+
+         // Return the result as an object
+        return {
+          nearestDocId,
+          nearestCoordinate,
+          nearestheadquarter_name,
+          nearestheadquarter_location_name
+        };
+    } catch (error) {
+      console.error("Error querying documents:", error);
+    }
+
+  }
+
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  }
+
   return (
     <View style={styles.loginPageContainer}>
       
@@ -185,6 +278,7 @@ const AlertForm = ({ navigation }) => {
           <TouchableOpacity onPress={() => handleAlert(false)} style={styles.button}>
           <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
           </TouchableOpacity>
+
       </View>
 
 

@@ -157,6 +157,11 @@ const CameraRecordPage = ({ route }) => {
           long: loc_data.long,
           date_added: serverTimestamp(),
           media_url: downloadURL, // Add the download URL to Firestore
+          headquarter_id: loc_data.headquarter_id,
+          headquarter_lat: loc_data.headquarter_lat,
+          headquarter_long: loc_data.headquarter_long,
+          headquarter_name: loc_data.headquarter_name,
+          headquarter_location_name: loc_data.headquarter_location_name
         };
   
         try {
@@ -174,6 +179,11 @@ const CameraRecordPage = ({ route }) => {
             long: loc_data.long,
             date_added: serverTimestamp(),
             media_url: downloadURL, // Add the download URL to Firestore
+            headquarter_id: loc_data.headquarter_id,
+            headquarter_lat: loc_data.headquarter_lat,
+            headquarter_long: loc_data.headquarter_long,
+            headquarter_name: loc_data.headquarter_name,
+            headquarter_location_name: loc_data.headquarter_location_name
           });
   
           // Display the location information in an alert
