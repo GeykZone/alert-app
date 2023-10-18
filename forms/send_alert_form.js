@@ -57,7 +57,7 @@ const AlertForm = ({ navigation }) => {
     }
   };
 
-  const handleAlert = async (hasEvidence) => {
+  const handleAlert = async () => {
     try {
       // Check for internet connectivity
       const networkState = await NetInfo.fetch();
@@ -89,82 +89,24 @@ const AlertForm = ({ navigation }) => {
       }
 
       const result = await get_data( location.coords.latitude, location.coords.longitude,);
+      const loc_data = {
+        areaName: areaName,
+        lat: location.coords.latitude,
+        long: location.coords.longitude,
+        witness_name: witness_name,
+        headquarter_id: result.nearestDocId,
+        headquarter_lat: result.nearestCoordinate.lat,
+        headquarter_long: result.nearestCoordinate.long,
+        headquarter_name: result.nearestheadquarter_name,
+        headquarter_location_name: result.nearestheadquarter_location_name,
 
-      if(hasEvidence)
-      {
-        const loc_data = {
-          areaName: areaName,
-          lat: location.coords.latitude,
-          long: location.coords.longitude,
-          witness_name: witness_name,
-          headquarter_id: result.nearestDocId,
-          headquarter_lat: result.nearestCoordinate.lat,
-          headquarter_long: result.nearestCoordinate.long,
-          headquarter_name: result.nearestheadquarter_name,
-          headquarter_location_name: result.nearestheadquarter_location_name
-        };
-        navigation.navigate('CameraRecordPage', {loc_data}); //open camera page
-      }
-      else {
-        // Reference to the document where you want to add the subcollection
-        const documentRef = doc(db, 'profile', 'user');
-  
-        // Reference to the subcollection "reports" inside the main document
-        const subcollectionRef = collection(documentRef, "data");
-  
-        // Data to be added to the subcollection
-        const reportData = {
-          user_name: witness_name,
-          alert_location: areaName,
-          lat: location.coords.latitude,
-          long: location.coords.longitude,
-          date_added: serverTimestamp(),
-          headquarter_id: result.nearestDocId,
-          headquarter_lat: result.nearestCoordinate.lat,
-          headquarter_long: result.nearestCoordinate.long,
-          headquarter_name: result.nearestheadquarter_name,
-          headquarter_location_name: result.nearestheadquarter_location_name
-        };
-  
-        try {
-          // Add data to the subcollection and get the auto-generated document ID
-          const newDocumentRef = await addDoc(subcollectionRef, reportData);
-  
-          // Use the newDocumentRef.id here
-          const newDocumentId = newDocumentRef.id; // INSERT HERE
-  
-          // Nested operation to set data in 'temp_logs' collection
-          await setDoc(doc(db, 'temp_logs', newDocumentId), {
-            user_name: witness_name,
-            alert_location: areaName,
-            lat: location.coords.latitude,
-            long: location.coords.longitude,
-            date_added: serverTimestamp(),
-            headquarter_id: result.nearestDocId,
-            headquarter_lat: result.nearestCoordinate.lat,
-            headquarter_long: result.nearestCoordinate.long,
-            headquarter_name: result.nearestheadquarter_name,
-            headquarter_location_name: result.nearestheadquarter_location_name
-            
-          });
-  
-          // Display the location information in an alert
-          const message = `Area Name: ${areaName}\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}\n\nMessage is sent to the nearest Police and Rescuers!
-          \nPolice Headquarter: ${result.nearestheadquarter_name}\n\nMessage alerted by: ${witness_name}`;
-  
-          Alert.alert('Accident Location', message, [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Handle success, navigate to the next screen, etc.
-              },
-            },
-          ]);
-        } catch (error) {
-          console.error('Error adding report or setting temp logs:', error);
-        }
-      }
-  
+        headquarter_id2: result.nearestDocId2,
+        headquarter_lat2: result.nearestCoordinate2.lat,
+        headquarter_long2: result.nearestCoordinate2.long,
+        headquarter_name2: result.nearestheadquarter_name2,
+        headquarter_location_name2: result.nearestheadquarter_location_name2
+      };
+      navigation.navigate('CameraRecordPage', {loc_data}); //open camera page
     
     } catch (error) {
       Alert.alert('Something Went Wrong', error.message, [
@@ -182,14 +124,17 @@ const AlertForm = ({ navigation }) => {
   {
     // Reference to the subcollection "head_quarters" inside the "profile/police" collection
     const subcollectionRef = collection(db, "profile", "police", "head_quarters");
+    const subcollectionRef2 = collection(db, "profile", "rescuer", "head_quarters");
     let constantLat = get_data_lat;
     let constantLon = get_data_lon;
 
     // Query all documents in the "head_quarters" subcollection
     const q = query(subcollectionRef);
+    const p = query(subcollectionRef2);
 
     try {
       const querySnapshot = await getDocs(q);
+      const querySnapshot2 = await getDocs(p);
 
       // Initialize variables to store the nearest coordinate and its distance
       let nearestCoordinate = null;
@@ -197,9 +142,14 @@ const AlertForm = ({ navigation }) => {
       let nearestheadquarter_name = null;
       let nearestheadquarter_location_name = null;
       let minDistance = Number.MAX_VALUE;
-    
 
-      // Process the query results
+      let nearestCoordinate2 = null;
+      let nearestDocId2 = null;
+      let nearestheadquarter_name2 = null;
+      let nearestheadquarter_location_name2 = null;
+      
+
+      // Process the query results for police
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         const lat = data.lat;
@@ -225,12 +175,44 @@ const AlertForm = ({ navigation }) => {
         }
       });
 
+      // Process the query results for rescuer
+      querySnapshot2.forEach((doc) => {
+        const data = doc.data();
+        const lat = data.lat;
+        const long = data.long;
+        const headquarter_name = data.headquarter_name;
+        const headquarter_location_name = data.headquarter_location_name;
+
+        // Calculate the distance between the constant and Firestore coordinates
+        const distance = calculateDistance(
+          constantLat,
+          constantLon,
+          lat,
+          long
+        );
+
+        // Check if this coordinate is nearer than the current nearest coordinate
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestCoordinate2 = { lat, long };
+          nearestDocId2 = doc.id;
+          nearestheadquarter_name2 = headquarter_name;
+          nearestheadquarter_location_name2 = headquarter_location_name;
+        }
+
+      });
+
          // Return the result as an object
         return {
           nearestDocId,
           nearestCoordinate,
           nearestheadquarter_name,
-          nearestheadquarter_location_name
+          nearestheadquarter_location_name,
+
+          nearestDocId2,
+          nearestCoordinate2,
+          nearestheadquarter_name2,
+          nearestheadquarter_location_name2
         };
     } catch (error) {
       console.error("Error querying documents:", error);
@@ -266,19 +248,13 @@ const AlertForm = ({ navigation }) => {
           name="username"
           value={userDetails.username}
           onChangeText={handleUsernameChange}
-          
         />
       </View>
 
       <View>
-      <TouchableOpacity onPress={() => handleAlert(true)} style={styles.button}>
-        <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER WITH EVIDENCE</Text>
+      <TouchableOpacity onPress={() => handleAlert()} style={styles.button}>
+        <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
       </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => handleAlert(false)} style={styles.button}>
-          <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
-          </TouchableOpacity>
-
       </View>
 
 

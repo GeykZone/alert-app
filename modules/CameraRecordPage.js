@@ -163,13 +163,29 @@ const CameraRecordPage = ({ route }) => {
           headquarter_name: loc_data.headquarter_name,
           headquarter_location_name: loc_data.headquarter_location_name
         };
+
+        const reportData2 = {
+          user_name: loc_data.witness_name,
+          alert_location: loc_data.areaName,
+          lat: loc_data.lat,
+          long: loc_data.long,
+          date_added: serverTimestamp(),
+          media_url: downloadURL, // Add the download URL to Firestore
+          headquarter_id: loc_data.headquarter_id2,
+          headquarter_lat: loc_data.headquarter_lat2,
+          headquarter_long: loc_data.headquarter_long2,
+          headquarter_name: loc_data.headquarter_name2,
+          headquarter_location_name: loc_data.headquarter_location_name2
+        };
   
         try {
           // Add data to the subcollection and get the auto-generated document ID
           const newDocumentRef = await addDoc(subcollectionRef, reportData);
+          const newDocumentRef2 = await addDoc(subcollectionRef, reportData2);
   
           // Use the newDocumentRef.id here
           const newDocumentId = newDocumentRef.id; // INSERT HERE
+          const newDocumentId2 = newDocumentRef2.id;
   
           // Nested operation to set data in 'temp_logs' collection
           await setDoc(doc(db, 'temp_logs', newDocumentId), {
@@ -185,10 +201,26 @@ const CameraRecordPage = ({ route }) => {
             headquarter_name: loc_data.headquarter_name,
             headquarter_location_name: loc_data.headquarter_location_name
           });
+
+          // Nested operation to set data in 'temp_logs' collection
+          await setDoc(doc(db, 'temp_logs', newDocumentId2), {
+            user_name: loc_data.witness_name,
+            alert_location: loc_data.areaName,
+            lat: loc_data.lat,
+            long: loc_data.long,
+            date_added: serverTimestamp(),
+            media_url: downloadURL, // Add the download URL to Firestore
+            headquarter_id: loc_data.headquarter_id2,
+            headquarter_lat: loc_data.headquarter_lat2,
+            headquarter_long: loc_data.headquarter_long2,
+            headquarter_name: loc_data.headquarter_name2,
+            headquarter_location_name: loc_data.headquarter_location_name2
+          });
   
           // Display the location information in an alert
-          const message = `Area Name: ${loc_data.areaName}\nLatitude: ${loc_data.lat}\nLongitude: ${loc_data.long}\n
-            \nMessage is sent to the nearest Police and Rescuers!\n
+          const message = `Area Name: ${loc_data.areaName}\nLatitude: ${loc_data.lat}\nLongitude: ${loc_data.long}
+            \nMessage is sent to the nearest Police and Rescuers!
+            \nPolice Headquarter: ${loc_data.headquarter_name}\nRescuer Headquarter: ${loc_data.headquarter_name2}
             \nMessage alerted by: ${loc_data.witness_name}\nAttached File: ${fileName}`;
   
           Alert.alert('Accident Location', message, [
