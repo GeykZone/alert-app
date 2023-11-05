@@ -15,6 +15,9 @@ import * as Location from 'expo-location';
 import CameraRecordPage from '../modules/CameraRecordPage';
 import { doc, setDoc, collection, addDoc, serverTimestamp, query, getDocs } from "firebase/firestore"; 
 import { db } from "../firebaseConfig";
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 
 const AlertForm = ({ navigation }) => {
@@ -26,6 +29,55 @@ const AlertForm = ({ navigation }) => {
   const [areaName, setAreaName] = useState(null);
   const [user_name, setUser_name] = useState("Unknown");
 
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+  
+  async function registerForPushNotificationsAsync() {
+    let token;
+  
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+  
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        alert('Failed to get push token for push notification!');
+        return;
+      }
+      token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig.extra.eas.projectId,
+      });
+      console.log(token);
+    } else {
+      alert('Must use physical device for Push Notifications');
+    }
+  
+    return token.data;
+  }
+
+
+  const [expoPushToken, setExpoPushToken] = useState('');
+  const [notification, setNotification] = useState(false);
+  const notificationListener = useRef();
+  const responseListener = useRef();
+  
+
   useEffect(() => {
     // Request location permission when the component mounts
     (async () => {
@@ -34,8 +86,57 @@ const AlertForm = ({ navigation }) => {
         Alert.alert('Permission denied', 'Location permission is required for this app.');
       }
     })();
+  
+    registerForPushNotificationsAsync().then((token) => setExpoPushToken(token));
+  
+    notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
+      setNotification(notification);
+  
+      // Extract notification details
+      const { title, body, data } = notification.request.content;
+  
+      // Show the notification details in a custom alert
+      displayNotificationAlert(title, body, data);
+    });
+  
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      // Extract notification details
+      const { title, body, data } = response.notification.request.content;
+  
+      // Delay the alert by a certain number of milliseconds (e.g., 2000 milliseconds or 2 seconds)
+      const delayMilliseconds = 300;
+  
+      setTimeout(() => {
+          // Show the notification details in a custom alert
+          displayNotificationAlert(title, body, data);
+      }, delayMilliseconds);
+    });
+  
+  
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener.current);
+      Notifications.removeNotificationSubscription(responseListener.current);
+    };
   }, []);
+  
+  
 
+  const displayNotificationAlert = (title, body, data) => {
+    const buttons = [
+      {
+        text: 'OK',
+        onPress: () => {
+          // Handle the action you want when the "OK" button is pressed
+          // For example, you can display additional information in an alert or perform some other action.
+          // You can also remove the following line if you don't need to handle any specific action.
+          console.log('OK Pressed');
+        },
+      },
+    ];
+  
+    Alert.alert(title || 'Notification Title', body || 'Notification Body', buttons);
+  };
+  
   
   const handleUsernameChange = (text) => {
     // Update the username in userDetails
@@ -90,6 +191,7 @@ const AlertForm = ({ navigation }) => {
 
       const result = await get_data( location.coords.latitude, location.coords.longitude,);
       const loc_data = {
+        expoToken: expoPushToken,
         areaName: areaName,
         lat: location.coords.latitude,
         long: location.coords.longitude,
@@ -128,6 +230,7 @@ const AlertForm = ({ navigation }) => {
     let constantLat = get_data_lat;
     let constantLon = get_data_lon;
 
+
     // Query all documents in the "head_quarters" subcollection
     const q = query(subcollectionRef);
     const p = query(subcollectionRef2);
@@ -147,6 +250,7 @@ const AlertForm = ({ navigation }) => {
       let nearestDocId2 = null;
       let nearestheadquarter_name2 = null;
       let nearestheadquarter_location_name2 = null;
+      let minDistance2 = Number.MAX_VALUE;
       
 
       // Process the query results for police
@@ -183,17 +287,21 @@ const AlertForm = ({ navigation }) => {
         const headquarter_name = data.headquarter_name;
         const headquarter_location_name = data.headquarter_location_name;
 
+
         // Calculate the distance between the constant and Firestore coordinates
-        const distance = calculateDistance(
+        const distance2 = calculateDistance(
           constantLat,
           constantLon,
           lat,
           long
         );
 
+        console.log(minDistance2);
+
+        
         // Check if this coordinate is nearer than the current nearest coordinate
-        if (distance < minDistance) {
-          minDistance = distance;
+        if (distance2 < minDistance2) {
+          minDistance2 = distance2;
           nearestCoordinate2 = { lat, long };
           nearestDocId2 = doc.id;
           nearestheadquarter_name2 = headquarter_name;
@@ -236,27 +344,42 @@ const AlertForm = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.loginPageContainer}>
-      
-     <Image source={logoImage} style={styles.logo} />
-      <Text style={styles.subtitle}>User {user_name}</Text>
+    <View style={{flex:1, backgroundColor:'#FFFFFF', paddingHorizontal: 15, paddingVertical: 40 }}>
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          name="username"
-          value={userDetails.username}
-          onChangeText={handleUsernameChange}
-        />
+      <View style={styles.loginPageContainerParent}>
+
+        <View style={styles.loginPageContainerChild1}>
+
+        <Image source={logoImage} style={styles.loginPageContainerInnerChild1} />
+
+        <View style={styles.loginPageContainerInnerChild2} >
+            <Text style={styles.subtitle}>User {user_name}</Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                name="username"
+                value={userDetails.username}
+                onChangeText={handleUsernameChange}
+                maxLength={20} // Set the maximum character limit
+              />
+            </View>
+
+            <View>
+            <TouchableOpacity onPress={() => handleAlert()} style={styles.button}>
+              <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
+            </TouchableOpacity>
+            </View>
+        </View>
+
+        <View style={styles.loginPageContainerInnerChild3} >
+        <Text style={styles.footer}>Intelligent Rescue Management System</Text>
+        </View>
+
+        </View>
+
       </View>
-
-      <View>
-      <TouchableOpacity onPress={() => handleAlert()} style={styles.button}>
-        <Text style={[styles.buttonText, { textAlign: 'center' }]}>ALERT TRIGGER</Text>
-      </TouchableOpacity>
-      </View>
-
 
     </View>
   );
@@ -264,37 +387,89 @@ const AlertForm = ({ navigation }) => {
 
 const styles = StyleSheet.create({
 
-    logo: {
-        width: 600, // Adjust the width and height to fit your logo size
-        height: 200,
-        resizeMode: "contain", // Use "contain" to maintain the aspect ratio
-        alignSelf: "center", // Center the logo horizontally
-        marginTop: -10, // Adjust the marginTop to control the vertical position
-      },
 
-  loginPageContainer: {
+
+  loginPageContainerInnerChild1: {
     flex: 1,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    width: 200, // Adjust the width and height to fit your logo size
+    height: 200,
+    resizeMode: "contain", // Use "contain" to maintain the aspect ratio
+  },
+
+  loginPageContainerInnerChild2: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    rowGap: 30
+  },
+
+  loginPageContainerInnerChild3: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+
+  loginPageContainerChild1: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    shadowColor: 'rgba(0 0 0 / 0.39)',
     rowGap: 30,
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    shadowOffset: {
+      width: 0,
+      height: 30,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 30,
+    elevation: 5, // This is for Android
+
+  },
+
+  loginPageContainerParent: {
+    flex: 1,
+    backgroundColor: '#E9E7E7',
+    shadowColor: 'rgba(0 0 0 / 0.48)',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    shadowOffset: {
+      width: 0,
+      height: 30,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 30,
+    elevation: 5, // This is for Android
+    borderRadius: 30,
   },
 
 
   subtitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
-    color: "#0F52BA"
+    color: "#0F52BA",
+  },
+
+  footer: {
+    fontSize: 12,
+    color: "#969CA5D0",
   },
 
   inputContainer: {
-    width: 300,
+    width: 250,
     height: 40,
     borderRadius: 10,
     borderColor: "#ccc",
     borderWidth: 1,
   },
+  
   input: {
     height: 40,
     padding: 10,
@@ -303,10 +478,17 @@ const styles = StyleSheet.create({
 
   button: {
     backgroundColor: "#FF6100",
-    borderRadius: 10,
+    borderRadius: 15,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    marginVertical: 10,
+    shadowColor: 'rgba(0 0 0 / 0.53)',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5, // This is for Android
   },
 
   buttonText: {

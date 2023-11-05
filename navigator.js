@@ -11,7 +11,18 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="AlertForm">
         <Stack.Screen name="AlertForm" title="Home" component={alertForm} options={{headerShown:false}}  />
-        <Stack.Screen name="CameraRecordPage" title="Camera"  component={CameraRecordPage} options={{ title: 'Create Evidence' }} />
+        <Stack.Screen   name="CameraRecordPage" title="Camera"  component={CameraRecordPage} options={{ title: 'Create Evidence',
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+        },
+        headerTitleStyle: {
+          color: 'black',
+          fontWeight: 'bold',
+          fontSize: 20, // Adjust the font size as needed
+        },
+        headerTintColor: 'black',
+        headerBackTitle: 'Back', // Customize the back button title 
+        }} />
         {/* Add other screens as needed */}
       </Stack.Navigator>
     </NavigationContainer>

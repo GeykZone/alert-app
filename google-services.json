@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "60963607750",
+    "firebase_url": "https://irms-2f0bb-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "irms-2f0bb",
+    "storage_bucket": "irms-2f0bb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60963607750:android:1380c9ffa62936b160f3c7",
+        "android_client_info": {
+          "package_name": "com.alert"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgsXQmfNnQR_mon9czqQsAIJH760ylHrw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

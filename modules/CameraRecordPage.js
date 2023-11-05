@@ -11,6 +11,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from "../firebaseConfig";
 
 
+
 const CameraRecordPage = ({ route }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [cameraRef, setCameraRef] = useState(null);
@@ -151,6 +152,7 @@ const CameraRecordPage = ({ route }) => {
         const documentRef = doc(db, 'profile', 'user');
         const subcollectionRef = collection(documentRef, 'data');
         const reportData = {
+          expoToken: loc_data.expoToken,
           user_name: loc_data.witness_name,
           alert_location: loc_data.areaName,
           lat: loc_data.lat,
@@ -165,6 +167,7 @@ const CameraRecordPage = ({ route }) => {
         };
 
         const reportData2 = {
+          expoToken: loc_data.expoToken,
           user_name: loc_data.witness_name,
           alert_location: loc_data.areaName,
           lat: loc_data.lat,
@@ -189,6 +192,7 @@ const CameraRecordPage = ({ route }) => {
   
           // Nested operation to set data in 'temp_logs' collection
           await setDoc(doc(db, 'temp_logs', newDocumentId), {
+            expoToken: loc_data.expoToken,
             user_name: loc_data.witness_name,
             alert_location: loc_data.areaName,
             lat: loc_data.lat,
@@ -199,11 +203,13 @@ const CameraRecordPage = ({ route }) => {
             headquarter_lat: loc_data.headquarter_lat,
             headquarter_long: loc_data.headquarter_long,
             headquarter_name: loc_data.headquarter_name,
-            headquarter_location_name: loc_data.headquarter_location_name
+            headquarter_location_name: loc_data.headquarter_location_name,
+            responded:false
           });
 
           // Nested operation to set data in 'temp_logs' collection
           await setDoc(doc(db, 'temp_logs', newDocumentId2), {
+            expoToken: loc_data.expoToken,
             user_name: loc_data.witness_name,
             alert_location: loc_data.areaName,
             lat: loc_data.lat,
@@ -214,7 +220,8 @@ const CameraRecordPage = ({ route }) => {
             headquarter_lat: loc_data.headquarter_lat2,
             headquarter_long: loc_data.headquarter_long2,
             headquarter_name: loc_data.headquarter_name2,
-            headquarter_location_name: loc_data.headquarter_location_name2
+            headquarter_location_name: loc_data.headquarter_location_name2,
+            responded:false
           });
   
           // Display the location information in an alert
@@ -287,31 +294,66 @@ const CameraRecordPage = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor:'#FFFFFF',
+    padding:20,
+    rowGap: 15,
+    
   },
   cameraContainer: {
-    flex: 3,
+    flex: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 30, // Adjust the radius value as needed
+    overflow: 'hidden', // Ensure content is clipped by the border radius
+    shadowColor: 'rgba(0 0 0 / 0.53)',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5, // This is for Android
   },
   camera: {
     flex: 1,
-    aspectRatio: 4 / 3,
+    width: '100%',
+    aspectRatio: 11/16, // Set the aspect ratio to match the camera preview
   },
+
   buttonsContainer: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius:30
   },
   captureButton: {
-    backgroundColor: 'orange',
+    backgroundColor: '#FF6100',
     borderRadius: 50,
     padding: 20,
     margin: 20,
+    shadowColor: 'rgba(0 0 0 / 0.53)',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5, // This is for Android
   },
   recordButton: {
-    backgroundColor: 'orange',
+    backgroundColor: '#FF6100',
     borderRadius: 50,
     padding: 20,
     margin: 20,
+    shadowColor: 'rgba(0 0 0 / 0.53)',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5, // This is for Android
   },
   buttonText: {
     color: "white",

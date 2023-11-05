@@ -42,7 +42,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_MEDIA_LOCATION"
       ],
-      "package": "com.alert"
+      "package": "com.alert",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
