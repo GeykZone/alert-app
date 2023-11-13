@@ -18,6 +18,7 @@ import { db } from "../firebaseConfig";
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { StatusBar } from 'expo-status-bar';
 
 
 const AlertForm = ({ navigation }) => {
@@ -343,8 +344,11 @@ const AlertForm = ({ navigation }) => {
     return distance;
   }
 
+
   return (
     <View style={{flex:1, backgroundColor:'#FFFFFF', paddingHorizontal: 15, paddingVertical: 40 }}>
+
+      <StatusBar style="auto"  animated={true} hideTransitionAnimation="slide" />
 
       <View style={styles.loginPageContainerParent}>
 

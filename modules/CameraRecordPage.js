@@ -9,8 +9,7 @@ import uuid from 'react-native-uuid';
 import { doc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from "../firebaseConfig";
-
-
+import { StatusBar } from 'expo-status-bar';
 
 const CameraRecordPage = ({ route }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -263,6 +262,7 @@ const CameraRecordPage = ({ route }) => {
 
   return (
     <View style={styles.container}>
+        <StatusBar style="auto"  animated={true} hideTransitionAnimation="slide" />
       {hasCameraPermission === null ? (
         <Text>Requesting camera permission...</Text>
       ) : hasCameraPermission === false ? (
